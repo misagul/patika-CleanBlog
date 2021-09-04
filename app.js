@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const ejs = require('ejs');
 const path = require('path');
 
+
+const methodOverride = require('method-override');
+
 const Post = require('./models/Post');
 const app = express();
 
@@ -19,20 +22,25 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(
+  methodOverride('_method', {
+    methods: ['POST', 'GET'],
+  })
+);
 
 //ROUTES
 app.get('/', async (req, res) => {
-  const posts = await Post.find({})
-  res.render('index',{
-    posts
+  const posts = await Post.find({});
+  res.render('index', {
+    posts,
   });
 });
 
 app.get('/posts/:id', async (req, res) => {
-  const post = await Post.findById(req.params.id)
-  res.render('post',{
+  const post = await Post.findById(req.params.id);
+  res.render('post', {
     post,
-  })
+  });
 });
 
 app.get('/about', (req, res) => {
@@ -44,9 +52,30 @@ app.get('/add_post', (req, res) => {
 });
 
 app.post('/posts', async (req, res) => {
-  await Post.create(req.body)
+  await Post.create(req.body);
   res.redirect('/');
 });
+
+app.put('/posts/:id', async (req, res) => {
+  const post = await Post.findOne({ _id: req.params.id });
+  post.title = req.body.title;
+  post.text = req.body.text;
+  post.save();
+  res.redirect(`/posts/${req.params.id}`);
+});
+
+app.get('/posts/edit/:id', async (req, res) => {
+  const post = await Post.findOne({ _id: req.params.id });
+  res.render('edit', {
+    post,
+  });
+});
+
+app.delete('/posts/:id', async (req, res) => {
+  const post = await Post.findOne({ _id: req.params.id });
+  await Post.findByIdAndRemove(req.params.id);
+  res.redirect('/');
+})
 
 const port = 3000;
 app.listen(port, () => {
